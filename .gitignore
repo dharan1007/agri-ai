@@ -1,0 +1,53 @@
+﻿# ---- Python ----
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.dylib
+*.egg-info/
+.eggs/
+dist/
+build/
+pip-wheel-metadata/
+*.log
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+.conda/
+.venv*/
+**/.venv/
+**/venv/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Data & models (adjust if you intentionally track some)
+data/
+datasets/
+checkpoints/
+models/
+*.pt
+*.pth
+*.onnx
+*.bin
+
+# Node (if present anywhere)
+node_modules/
+
+# Coverage / testing
+.coverage
+htmlcov/
+.pytest_cache/
