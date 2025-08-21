@@ -1,0 +1,73 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_DB: agri
+    ports: ["5433:5432"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./initdb.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  minio:
+    # Use Docker Hub to avoid the quay.io tag issue
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: minio12345
+    ports: ["9000:9000","9001:9001"]
+    volumes: [miniodata:/data]
+
+  redis:
+    image: redis:7
+    ports: ["6379:6379"]
+
+  disease-predictor:
+    build: ../../services/disease-predictor
+    environment:
+      MODEL_LOCAL_PATH: /app/model.onnx
+      LABELS_PATH: /app/labels.json
+    depends_on:
+      - postgres
+      - minio
+    ports: ["8001:8000"]
+
+  schemes-recommender:
+    build: ../../services/schemes-recommender
+    environment:
+      # If Postgres is running from this compose, keep this URL.
+      # (You can switch to SQLite for quick dev if you want—ask me and I’ll paste that variant.)
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@postgres:5432/agri
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports: ["8002:8000"]
+
+  crop-calendar:
+    build: ../../services/crop-calendar
+    depends_on:
+      - postgres
+    ports: ["8003:8000"]
+
+  web:
+    build: ../../apps/web
+    environment:
+      NEXT_PUBLIC_PREDICT_URL: http://localhost:8001/predict
+      NEXT_PUBLIC_SCHEMES_URL: http://localhost:8002/schemes
+      NEXT_PUBLIC_CALENDAR_URL: http://localhost:8003/calendar
+    ports: ["3000:3000"]
+    depends_on:
+      - disease-predictor
+      - schemes-recommender
+      - crop-calendar
+
+volumes:
+  pgdata:
+  miniodata:
