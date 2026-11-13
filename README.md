@@ -214,6 +214,12 @@ data/models/disease/
 
 The raw dataset is stored below `datasets/raw/`. Do not infer production model quality from the presence or size of the dataset alone; validate trained artifacts against held-out data and the evaluation utilities before release.
 
+### Dataset provenance and reuse
+
+The repository contains raw plant-disease images under `agri-assistant/datasets/raw/`, but it does not document their upstream source, attribution, or applicable terms. Treat permission to redistribute these files or use them for third-party model training as unresolved until the source and terms are documented. Dataset rights may differ from the code license.
+
+The `data/schemes/sample_schemes.csv` file is sample input, not verified live government guidance. Do not use its rows for real recommendations until each scheme's current eligibility, benefits, and source are checked with the issuing agency.
+
 Scheme data has its own ingestion path under `data/schemes/` and is persisted into the PostgreSQL schema initialized by `infra/compose/initdb.sql`.
 
 ## Development notes
