@@ -214,6 +214,33 @@ data/models/disease/
 
 The raw dataset is stored below `datasets/raw/`. Do not infer production model quality from the presence or size of the dataset alone; validate trained artifacts against held-out data and the evaluation utilities before release.
 
+The trainer accepts either `train/<class>/` with an optional `val/<class>/` directory, or direct class folders. The checked-in `datasets/raw/` uses direct class folders. After confirming the dataset's source and applicable terms, run this from `agri-assistant/`.
+
+Create the virtual environment:
+
+```sh
+python -m venv .venv
+```
+
+Activate it with PowerShell:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
+
+Or activate it on macOS/Linux:
+
+```sh
+source .venv/bin/activate
+```
+
+Then install dependencies and train:
+
+```sh
+python -m pip install -r data/models/disease/requirements.txt
+python data/models/disease/train.py --data-dir datasets/raw --epochs 10
+```
+
 ### Dataset provenance and reuse
 
 The repository contains raw plant-disease images under `agri-assistant/datasets/raw/`, but it does not document their upstream source, attribution, or applicable terms. Treat permission to redistribute these files or use them for third-party model training as unresolved until the source and terms are documented. Dataset rights may differ from the code license.
