@@ -218,7 +218,8 @@ The trainer accepts either `train/<class>/` with an optional `val/<class>/` dire
 
 ```bash
 python -m venv .venv
-# Activate .venv for your shell before installing dependencies.
+# PowerShell: .\.venv\Scripts\Activate.ps1
+  # macOS/Linux: source .venv/bin/activate
 python -m pip install -r data/models/disease/requirements.txt
 python data/models/disease/train.py --data-dir datasets/raw --epochs 10
 ```
