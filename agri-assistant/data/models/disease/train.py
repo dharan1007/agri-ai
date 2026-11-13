@@ -2,21 +2,20 @@
 Train a crop-disease classifier with transfer learning (MobileNetV3 Small),
 export ONNX + labels.json so the FastAPI service can load them.
 
-DATA LAYOUT (bring your dataset with folders per class):
-datasets/
-  plantvillage/
-    train/
-      healthy/
-      leaf_blight/
-      rust/
-      ...
-    val/        # optional; if missing we create a split from train/
-      healthy/ ...
-    test/       # optional
+DATA LAYOUT (choose one):
+  direct class folders, like datasets/raw/:
+    healthy/
+    powdery_mildew/
+    rust/
+  or split folders:
+    datasets/
+      train/<class>/
+      val/<class>/  # optional; if absent, a deterministic split is made from train/
 
 USAGE (from `agri-assistant/`):
   python -m venv .venv
-  # Activate .venv for your shell before installing dependencies.
+  # PowerShell: .\.venv\Scripts\Activate.ps1
+  # macOS/Linux: source .venv/bin/activate
   python -m pip install -r data/models/disease/requirements.txt
   python data/models/disease/train.py --data-dir datasets/raw --epochs 10
 
