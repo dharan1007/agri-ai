@@ -14,10 +14,11 @@ datasets/
       healthy/ ...
     test/       # optional
 
-USAGE (from repo root):
-  python -m venv .venv && .venv/Scripts/activate  # on Windows
-  pip install -r data/models/disease/requirements.txt
-  python data/models/disease/train.py --data-dir datasets/plantvillage --epochs 10
+USAGE (from `agri-assistant/`):
+  python -m venv .venv
+  # Activate .venv for your shell before installing dependencies.
+  python -m pip install -r data/models/disease/requirements.txt
+  python data/models/disease/train.py --data-dir datasets/raw --epochs 10
 
 Artifacts will be written to:
   services/disease-predictor/app/model.onnx
@@ -28,7 +29,7 @@ from pathlib import Path
 import numpy as np
 import torch
 import torch.nn as nn
-from torch.utils.data import DataLoader, random_split
+from torch.utils.data import DataLoader, Subset, random_split
 from torchvision import datasets, transforms, models
 from sklearn.metrics import classification_report, confusion_matrix
 from tqdm import tqdm
@@ -53,25 +54,39 @@ def build_loaders(data_dir: Path, img_sz=224, batch=64, val_split=0.15):
         transforms.ToTensor(),
         transforms.Normalize(mean, std),
     ])
-    train_root = data_dir/"train"
-    val_root   = data_dir/"val"
-    has_val = val_root.exists()
+    split_train_root = data_dir/"train"
+    val_root = data_dir/"val"
+    has_train_split = split_train_root.is_dir()
+
+    if has_train_split:
+        train_root = split_train_root
+        has_val = val_root.is_dir()
+    else:
+        if val_root.exists():
+            raise ValueError(f"Expected a `train/` directory beside `{val_root}` when `val/` exists")
+        train_root = data_dir
+        has_val = False
 
     if has_val:
         train_ds = datasets.ImageFolder(train_root, transform=train_tf)
-        val_ds   = datasets.ImageFolder(val_root,   transform=eval_tf)
+        val_ds = datasets.ImageFolder(val_root, transform=eval_tf)
+        if train_ds.classes != val_ds.classes:
+            raise ValueError("train/ and val/ must contain the same class directories")
+        classes = train_ds.classes
     else:
         full = datasets.ImageFolder(train_root, transform=train_tf)
-        n_val = int(len(full)*val_split)
+        if len(full) < 2:
+            raise ValueError("At least two labeled images are required to create a train/validation split")
+        n_val = min(len(full)-1, max(1, int(len(full)*val_split)))
         n_train = len(full)-n_val
-        train_ds, val_ds = random_split(full, [n_train, n_val],
-                                        generator=torch.Generator().manual_seed(42))
-        # IMPORTANT: val must transform with eval_tf
-        val_ds = type(val_ds)(val_ds.dataset, val_ds.indices, transform=eval_tf)  # hack to swap transform
+        train_ds, val_split_ds = random_split(full, [n_train, n_val],
+                                               generator=torch.Generator().manual_seed(42))
+        eval_full = datasets.ImageFolder(train_root, transform=eval_tf)
+        val_ds = Subset(eval_full, val_split_ds.indices)
+        classes = full.classes
 
     train_loader = DataLoader(train_ds, batch_size=batch, shuffle=True, num_workers=4, pin_memory=True)
     val_loader   = DataLoader(val_ds,   batch_size=batch, shuffle=False, num_workers=4, pin_memory=True)
-    classes = (train_ds.dataset.classes if has_val else full.classes)
     return train_loader, val_loader, classes
 
 def build_model(num_classes):
@@ -101,7 +116,7 @@ def train(args):
     sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=args.epochs)
     loss = nn.CrossEntropyLoss()
 
-    best_acc, best_w = 0.0, None
+    best_acc, best_w = -1.0, None
     for epoch in range(1, args.epochs+1):
         model.train(); tot=0
         pbar = tqdm(tr, desc=f"epoch {epoch}/{args.epochs}")
@@ -141,7 +156,7 @@ def train(args):
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--data-dir", type=str, required=True, help="path containing train/ (and optional val/)")
+    ap.add_argument("--data-dir", type=str, required=True, help="class folders directly or train/ (and optional val/)")
     ap.add_argument("--epochs", type=int, default=10)
     ap.add_argument("--batch", type=int, default=64)
     ap.add_argument("--lr", type=float, default=3e-4)
