@@ -14,8 +14,8 @@ DATA LAYOUT (choose one):
 
 USAGE (from `agri-assistant/`):
   python -m venv .venv
-  # PowerShell: .\.venv\Scripts\Activate.ps1
-  # macOS/Linux: source .venv/bin/activate
+  Activate with .\.venv\Scripts\Activate.ps1 on PowerShell,
+  or source .venv/bin/activate on macOS/Linux.
   python -m pip install -r data/models/disease/requirements.txt
   python data/models/disease/train.py --data-dir datasets/raw --epochs 10
 
